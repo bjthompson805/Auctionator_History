@@ -3,7 +3,7 @@
 ## Version: 1
 ## Author: bjthompson805
 ## X-Category: Auction/Economy
-## Notes: Displays item scan history stored by Auctionator.
+## Notes: Displays item scan history stored by Auctionator in item tooltips.
 ## Dependencies: Auctionator
 
 Auctionator_History.lua
