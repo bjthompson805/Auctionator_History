@@ -5,9 +5,19 @@ function AuctionatorHistory:OnInitialize()
     hooksecurefunc(ItemRefTooltip, "SetHyperlink", function(tip) AuctionatorHistory:OnTooltipSetItem(tip); end)
 end
 
+-- This method is hooked to be called when SetHyperlink() is called for the ItemRefTooltip
+-- (which is the tooltip for items that have been clicked).
 function AuctionatorHistory:OnTooltipSetItem(tip)
     -- Create the history button
-    local historyButton = CreateFrame("Button", "historyButton", tip, "UIPanelButtonTemplate")
+    local historyButton = _G["auctionatorHistoryButton"]
+    if (historyButton == nil) then
+        -- Create the button
+        historyButton = CreateFrame("Button", "auctionatorHistoryButton", tip, "UIPanelButtonTemplate")
+    else
+        -- Show the previously created button
+        historyButton:Show()
+    end
+    
     historyButton:SetWidth(130)
     historyButton:SetHeight(22)
     historyButton:SetText("Auctionator History")
@@ -24,6 +34,7 @@ function AuctionatorHistory:OnTooltipSetItem(tip)
     end)
 end
 
+-- This method is called when the "Auctionator History" button is clicked.
 function AuctionatorHistory:ShowHistory(tip, historyButton)
     local _, itemLink = tip:GetItem()
     Auctionator.Utilities.DBKeyFromLink(itemLink, function(dbKeys)
@@ -45,6 +56,7 @@ function AuctionatorHistory:ShowHistory(tip, historyButton)
     end)
 end
 
+-- Initialize the addon, when the PLAYER_LOGIN event is triggered.
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function(self, event, addon)
