@@ -2,12 +2,36 @@
 AuctionatorHistory = select(2, ...)
 
 function AuctionatorHistory:OnInitialize()
-    hooksecurefunc(ItemRefTooltip, "SetHyperlink", function(tip) AuctionatorHistory:OnTooltipSetItem(tip); end)
+    hooksecurefunc(
+        ItemRefTooltip,
+        "SetHyperlink",
+        function(tip, linkString) AuctionatorHistory:OnTooltipSetItem(tip, linkString); end
+    )
+
+    hooksecurefunc(
+        ItemRefTooltip,
+        "Hide",
+        function(tip) AuctionatorHistory:OnTooltipHide(tip); end
+    )
+end
+
+-- This method is hooked to be called when Hide() is called for the ItemRefTooltip.
+function AuctionatorHistory:OnTooltipHide(tip)
+    local historyButton = _G["auctionatorHistoryButton"]
+    if (historyButton ~= nil) then
+        -- Hide the history button in case the next clicked hyperlink is not an item
+        -- which means we don't want it to show up.
+        historyButton:Hide()
+    end
 end
 
 -- This method is hooked to be called when SetHyperlink() is called for the ItemRefTooltip
 -- (which is the tooltip for items that have been clicked).
-function AuctionatorHistory:OnTooltipSetItem(tip)
+function AuctionatorHistory:OnTooltipSetItem(tip, linkString)
+    -- Do not show the history button for hyperlinks that are not items.
+    local linkType = strsplit(":", linkString)
+    if linkType ~= "item" then return; end
+
     -- Create the history button
     local historyButton = _G["auctionatorHistoryButton"]
     if (historyButton == nil) then
