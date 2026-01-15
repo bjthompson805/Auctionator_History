@@ -1,4 +1,4 @@
-## Interface: 11507
+## Interface: 20505, 11508
 ## Title: Auctionator_History
 ## Version: 1
 ## Author: bjthompson805
