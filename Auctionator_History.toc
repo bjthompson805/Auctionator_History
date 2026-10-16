@@ -1,9 +1,10 @@
-## Interface: 20505, 11508
+## Interface: 20506, 11509
 ## Title: Auctionator_History
 ## Version: 1
 ## Author: bjthompson805
 ## X-Category: Auction/Economy
-## Notes: Displays item scan history stored by Auctionator in item tooltips.
+## Notes: Displays item scan history stored by Auctionator in item tooltips, and reports it to chat.
 ## Dependencies: Auctionator
+## SavedVariables: AuctionatorHistoryDB
 
 Auctionator_History.lua
