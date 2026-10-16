@@ -8,6 +8,10 @@ local REPORT_ICON = "Interface\\Buttons\\UI-GuildButton-MOTD-Up"
 local MAX_REPORT_LINES = 25
 local DEFAULT_REPORT_LINES = 10
 
+-- Space between the tooltip's last line and its button, and below the button.
+local BUTTON_GAP = 6
+local BUTTON_BOTTOM_MARGIN = 8
+
 -- C_ChatInfo.SendChatMessage replaces the global in newer clients.
 local SendChatMessage = (C_ChatInfo and C_ChatInfo.SendChatMessage) or SendChatMessage
 
@@ -26,6 +30,43 @@ function AuctionatorHistory:OnInitialize()
         "Hide",
         function(tip) AuctionatorHistory:OnTooltipHide(tip); end
     )
+
+    -- Other addons (e.g. Auctionator and idTip) add lines and call Show() after
+    -- the SetHyperlink hook above runs. Show() shrinks the tooltip back to fit
+    -- just its text, so make room for the button again after every Show().
+    hooksecurefunc(
+        ItemRefTooltip,
+        "Show",
+        function(tip) AuctionatorHistory:RequestTooltipFit(tip); end
+    )
+end
+
+-- Makes the tooltip tall enough to fit the button showing at its bottom (if
+-- any) below its last line of text, so the button never covers any text.
+function AuctionatorHistory:FitTooltipToButton(tip)
+    local button = _G["auctionatorHistoryReportButton"]
+    if (button == nil or not button:IsShown()) then
+        button = _G["auctionatorHistoryButton"]
+    end
+    if (button == nil or not button:IsShown()) then return; end
+
+    local lastLine = _G[tip:GetName() .. "TextLeft" .. tip:NumLines()]
+    local tipTop = tip:GetTop()
+    local lineBottom = lastLine and lastLine:GetBottom()
+    if (tipTop == nil or lineBottom == nil) then return; end
+
+    local height = (tipTop - lineBottom) + BUTTON_GAP + button:GetHeight() + BUTTON_BOTTOM_MARGIN
+    if (math.abs(tip:GetHeight() - height) > 0.5) then
+        tip:SetHeight(height)
+    end
+end
+
+function AuctionatorHistory:RequestTooltipFit(tip)
+    AuctionatorHistory:FitTooltipToButton(tip)
+
+    -- Check again on the next frame, in case the tooltip is laid out again
+    -- later in this frame without another Show() call.
+    C_Timer.After(0, function() AuctionatorHistory:FitTooltipToButton(tip); end)
 end
 
 -- This method is hooked to be called when Hide() is called for the ItemRefTooltip.
@@ -66,9 +107,8 @@ function AuctionatorHistory:OnTooltipSetItem(tip, linkString)
     historyButton:SetText("Auctionator History")
 
     -- Place the history button on tooltips for items that have been clicked
-    tip:AddLine("  ")
-    tip:SetHeight(tip:GetHeight() + 50)
-    historyButton:SetPoint("BOTTOMLEFT", 8, 8)
+    historyButton:SetPoint("BOTTOMLEFT", 8, BUTTON_BOTTOM_MARGIN)
+    AuctionatorHistory:RequestTooltipFit(tip)
 
     -- Setup clicking of the history button
     historyButton:RegisterForClicks("AnyUp")
@@ -84,7 +124,6 @@ function AuctionatorHistory:ShowHistory(tip, historyButton)
         historyButton:Hide()
         tip:SetWidth(512)
         tip:AddDoubleLine("Date", "Price")
-        tip:SetHeight(tip:GetHeight() + 12)
         local reportEntries = {}
         for _, itemId in ipairs(dbKeys) do
             local itemHistory = Auctionator.Database:GetPriceHistory(itemId)
@@ -92,22 +131,17 @@ function AuctionatorHistory:ShowHistory(tip, historyButton)
                 local date = itemHistoryTable['date']
                 local priceStr = Auctionator.Utilities.CreatePaddedMoneyString(itemHistoryTable['minSeen']) .. " (available: " .. itemHistoryTable['available'] .. ")"
                 tip:AddDoubleLine(date, priceStr)
-                tip:SetHeight(tip:GetHeight() + 12)
                 table.insert(reportEntries, itemHistoryTable)
             end
         end
 
         if #reportEntries > 0 then
-            -- Leave room at the bottom of the tooltip for the report button.
-            tip:AddLine("  ")
-        end
-        tip:SetHeight(tip:GetHeight() + 2)
-        tip:Show()
-
-        if #reportEntries > 0 then
-            tip:SetHeight(tip:GetHeight() + 14)
             AuctionatorHistory:ShowReportButton(tip, itemLink, reportEntries)
         end
+
+        -- Show() resizes the tooltip to fit the new lines, and then the Show()
+        -- hook makes room for the report button below them.
+        tip:Show()
     end)
 end
 
@@ -160,7 +194,7 @@ function AuctionatorHistory:ShowReportButton(tip, itemLink, entries)
         reportButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
     end
 
-    reportButton:SetPoint("BOTTOMLEFT", 8, 8)
+    reportButton:SetPoint("BOTTOMLEFT", 8, BUTTON_BOTTOM_MARGIN)
     reportButton:SetScript("OnClick", function(self, button, down)
         AuctionatorHistory:ShowReportWindow(itemLink, entries)
     end)
