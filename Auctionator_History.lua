@@ -186,10 +186,21 @@ function AuctionatorHistory:ShowReportButton(tip, itemLink, entries)
         reportButton:HookScript("OnMouseDown", function() icon:SetPoint("CENTER", 1, -1) end)
         reportButton:HookScript("OnMouseUp", function() icon:SetPoint("CENTER", 0, 0) end)
         reportButton:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetOwner(self, "ANCHOR_NONE")
             GameTooltip:SetText("Report History")
             GameTooltip:AddLine("Send this item's Auctionator history to chat.", 1, 1, 1, true)
             GameTooltip:Show()
+
+            -- The item tooltip is drawn above the GameTooltip, so place this
+            -- tooltip beside the item tooltip instead of over it. Use the
+            -- right side, unless there is not enough room on the screen.
+            local itemTip = self:GetParent()
+            GameTooltip:ClearAllPoints()
+            if itemTip:GetRight() + GameTooltip:GetWidth() > UIParent:GetRight() then
+                GameTooltip:SetPoint("BOTTOMRIGHT", itemTip, "BOTTOMLEFT", -2, 0)
+            else
+                GameTooltip:SetPoint("BOTTOMLEFT", itemTip, "BOTTOMRIGHT", 2, 0)
+            end
         end)
         reportButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
     end
