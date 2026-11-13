@@ -12,6 +12,9 @@ local DEFAULT_REPORT_LINES = 10
 local BUTTON_GAP = 6
 local BUTTON_BOTTOM_MARGIN = 8
 
+-- Seconds to wait between the lines of a report, to keep them in order.
+local REPORT_LINE_DELAY = 0.2
+
 -- C_ChatInfo.SendChatMessage replaces the global in newer clients.
 local SendChatMessage = (C_ChatInfo and C_ChatInfo.SendChatMessage) or SendChatMessage
 
@@ -499,13 +502,19 @@ function AuctionatorHistory:SendReport()
         table.insert(lines, line)
     end
 
-    for _, line in ipairs(lines) do
+    -- Lines sent in the same frame can reach the chat out of order, so send
+    -- them one at a time with a short delay between each.
+    local function SendLine(i)
         if chatType == "REALID" then
-            BNSendWhisper(target, line)
+            BNSendWhisper(target, lines[i])
         else
-            SendChatMessage(line, chatType, nil, target)
+            SendChatMessage(lines[i], chatType, nil, target)
+        end
+        if i < #lines then
+            C_Timer.After(REPORT_LINE_DELAY, function() SendLine(i + 1) end)
         end
     end
+    SendLine(1)
     return true
 end
 
